@@ -11,6 +11,14 @@ import type { NextRequest } from "next/server";
 /** Sliding-window counter per IP address. */
 const ipCounters = new Map<string, { count: number; resetAt: number }>();
 
+/** Remove expired entries every 5 minutes to prevent unbounded growth. */
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of ipCounters) {
+    if (now >= entry.resetAt) ipCounters.delete(ip);
+  }
+}, 5 * 60 * 1000).unref?.();
+
 /**
  * Returns true if the request should be blocked (rate limit exceeded).
  * @param ip     - Client IP address.
