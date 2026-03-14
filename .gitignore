@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# Env
+.env*.local
+.env
+
+# Database
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
+
+# Misc
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+package-lock.json
