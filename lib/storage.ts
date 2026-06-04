@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
-import { BookmarkItem, SnapshotItem, WatchlistItem } from "@/lib/types";
+import { BookmarkItem, FinancialSignalItem, SnapshotItem, WatchlistItem } from "@/lib/types";
 
 const dataDir = path.join(process.cwd(), "data");
 const dbPath = path.join(dataDir, "ajel.sqlite");
@@ -15,6 +15,15 @@ const db = new DatabaseSync(dbPath);
 
 db.exec(`
   PRAGMA journal_mode = WAL;
+  CREATE TABLE IF NOT EXISTS financial_signals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    captured_at TEXT NOT NULL,
+    overall_sentiment TEXT NOT NULL,
+    sentiment_score REAL NOT NULL,
+    dominant_ticker TEXT NOT NULL,
+    market_condition TEXT NOT NULL,
+    news_count INTEGER NOT NULL
+  );
   CREATE TABLE IF NOT EXISTS watchlists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     label TEXT NOT NULL,
@@ -124,6 +133,29 @@ export function saveSnapshot(input: Omit<SnapshotItem, "id">) {
   }
   db.prepare(`INSERT INTO snapshots (captured_at, critical_count, high_count, total_items, dominant_country, dominant_theme) VALUES (?, ?, ?, ?, ?, ?)`)
     .run(input.capturedAt, input.criticalCount, input.highCount, input.totalItems, input.dominantCountry, input.dominantTheme);
+}
+
+export function getFinancialSignals(): FinancialSignalItem[] {
+  const rows = db.prepare(`SELECT * FROM financial_signals ORDER BY id DESC LIMIT 48`).all() as Array<Record<string, unknown>>;
+  return rows.map((row) => ({
+    id: Number(row.id),
+    capturedAt: String(row.captured_at),
+    overallSentiment: String(row.overall_sentiment) as FinancialSignalItem["overallSentiment"],
+    sentimentScore: Number(row.sentiment_score),
+    dominantTicker: String(row.dominant_ticker),
+    marketCondition: String(row.market_condition),
+    newsCount: Number(row.news_count),
+  }));
+}
+
+export function saveFinancialSignal(input: Omit<FinancialSignalItem, "id">) {
+  const latest = db.prepare(`SELECT captured_at FROM financial_signals ORDER BY id DESC LIMIT 1`).get() as Record<string, unknown> | undefined;
+  if (latest?.captured_at) {
+    const last = new Date(String(latest.captured_at)).getTime();
+    if (Date.now() - last < 5 * 60 * 1000) return;
+  }
+  db.prepare(`INSERT INTO financial_signals (captured_at, overall_sentiment, sentiment_score, dominant_ticker, market_condition, news_count) VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(input.capturedAt, input.overallSentiment, input.sentimentScore, input.dominantTicker, input.marketCondition, input.newsCount);
 }
 
 export function seedDefaults() {

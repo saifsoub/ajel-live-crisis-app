@@ -68,7 +68,7 @@ export type BriefResponse = {
   };
   sourceStatus: {
     gdelt: "ok" | "degraded";
-    reliefweb: "ok" | "degraded";
+    reliefweb: "ok" | "degraded" | "disabled";
     newsapi: "ok" | "disabled" | "degraded";
     openai: "enabled" | "heuristic" | "degraded";
   };
@@ -79,4 +79,14 @@ export type DashboardBundle = {
   watchlists: WatchlistItem[];
   bookmarks: BookmarkItem[];
   snapshots: SnapshotItem[];
+};
+
+export type FinancialSignalItem = {
+  id: number;
+  capturedAt: string;
+  overallSentiment: "bullish" | "bearish" | "neutral";
+  sentimentScore: number;
+  dominantTicker: string;
+  marketCondition: string;
+  newsCount: number;
 };
